@@ -1,9 +1,9 @@
 {
-	"name": "lechpat/users",
+	"name": "lechpat/cake-users",
 	"type": "cakephp-plugin",
 	"description": "This plugin is a set of tools for user handling like registration, login, email verification, password reset and much more.",
 	"keywords": ["users",  "login", "registration", "signup"],
-	"homepage": "http://github.com/lechpat/Users",
+	"homepage": "http://github.com/lechpat/CakeUsers",
 	"license": "MIT",
 	"authors": [
 		{
