@@ -7,8 +7,7 @@
 	"license": "MIT",
 	"authors": [
 		{
-			"name": "Mario Valdez",
-			"role":"Author",
+			"name": "Mario Valdez"
 		}
 	],
 	"require": {
