@@ -1,0 +1,34 @@
+{
+	"name": "lechpat/users",
+	"type": "cakephp-plugin",
+	"description": "This plugin is a set of tools for user handling like registration, login, email verification, password reset and much more.",
+	"keywords": ["users",  "login", "registration", "signup"],
+	"homepage": "http://github.com/lechpat/users",
+	"license": "MIT",
+	"authors": [
+		{
+			"name": "Mario Valdez",
+			"role":"Author",
+		}
+	],
+	"require": {
+		"php": ">=5.4.16",
+		"cakephp/plugin-installer": "*",
+		"cakephp/cakephp": "~3.0.2"
+	},
+	"require-dev": {
+		"phpunit/phpunit": "*"
+	},
+	"autoload": {
+		"psr-4": {
+			"Users\\": "src",
+			"Users\\Test\\Fixture\\": "tests\\Fixture"
+		}
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"Cake\\Test\\": "vendor/cakephp/cakephp/tests",
+			"Users\\Test\\": "tests"
+		}
+	}
+}
