@@ -1,12 +1,5 @@
 <?php
-/**
- * UserRegistrationValidator
- *
- * @author Florian Krämer
- * @copyright 2013 - 2015 Florian Krämer
- * @license MIT
- */
-namespace Burzum\UserTools\Validation;
+namespace Users\Validation;
 
 use Cake\Validation\Validator;
 
@@ -34,20 +27,20 @@ class UsersValidator extends Validator {
 		$this->add('username', [
 			'notBlank' => [
 				'rule' => 'notBlank',
-				'message' => __d('user_tools', 'An username is required.')
+				'message' => __d('users', 'An username is required.')
 			],
 			'length' => [
 				'rule' => ['lengthBetween', 3, 32],
-				'message' => __d('user_tools', 'The username must be between 3 and 32 characters.')
+				'message' => __d('users', 'The username must be between 3 and 32 characters.')
 			],
 			'unique' => [
 				'rule' => ['validateUnique', ['scope' => 'username']],
 				'provider' => 'table',
-				'message' => __d('user_tools', 'The username is already in use.')
+				'message' => __d('users', 'The username is already in use.')
 			],
 			'alphaNumeric' => [
 				'rule' => 'alphaNumeric',
-				'message' => __d('user_tools', 'The username must be alpha numeric.')
+				'message' => __d('users', 'The username must be alpha numeric.')
 			]
 		]);
 	}
@@ -63,16 +56,16 @@ class UsersValidator extends Validator {
 		$this->add('email', [
 			'notBlank' => [
 				'rule' => 'notBlank',
-				'message' => __d('user_tools', 'An email is required.')
+				'message' => __d('users', 'An email is required.')
 			],
 			'unique' => [
 				'rule' => ['validateUnique', ['scope' => 'email']],
 				'provider' => 'table',
-				'message' => __d('user_tools', 'The email is already in use.')
+				'message' => __d('users', 'The email is already in use.')
 			],
 			'validEmail' => [
 				'rule' => 'email',
-				'message' => __d('user_tools', 'Must be a valid email address.')
+				'message' => __d('users', 'Must be a valid email address.')
 			]
 		]);
 	}
@@ -88,15 +81,15 @@ class UsersValidator extends Validator {
 		$this->add('password', [
 			'notBlank' => [
 				'rule' => 'notBlank',
-				'message' => __d('user_tools', 'A password is required.')
+				'message' => __d('users', 'A password is required.')
 			],
 			'minLength' => [
 				'rule' => ['minLength', 6],
-				'message' => __d('user_tools', 'The password must have at least 6 characters.')
+				'message' => __d('users', 'The password must have at least 6 characters.')
 			],
 			'confirmPassword' => [
 				'rule' => ['compareFields', 'confirm_password'],
-				'message' => __d('user_tools', 'The passwords don\'t match!'),
+				'message' => __d('users', 'The passwords don\'t match!'),
 				'provider' => 'myself',
 			]
 		]);
@@ -113,19 +106,32 @@ class UsersValidator extends Validator {
 		$this->add('confirm_password', [
 			'notBlank' => [
 				'rule' => 'notBlank',
-				'message' => __d('user_tools', 'A password is required.')
+				'message' => __d('users', 'A password is required.')
 			],
 			'minLength' => [
 				'rule' => ['minLength', 6],
-				'message' => __d('user_tools', 'The password must have at least 6 characters.')
+				'message' => __d('users', 'The password must have at least 6 characters.')
 			],
 			'confirmPassword' => [
 				'rule' => ['compareFields', 'password'],
-				'message' => __d('user_tools', 'The passwords don\'t match!'),
+				'message' => __d('users', 'The passwords don\'t match!'),
 				'provider' => 'myself',
 			]
 		]);
 	}
+
+    public function validateMobileCode() {
+        $this->add('code', [
+            'notBlank' => [
+                'rule' => 'notBlank',
+                'message' => __d('users', 'A password is required.')
+            ],
+            'minLength' => [
+                'rule' => ['minLength', 6],
+                'message' => __d('users', 'The password must have at least 6 characters.')
+            ]
+        ]);
+    }
 
 /**
  * Compares the value of two fields.

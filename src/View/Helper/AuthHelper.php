@@ -1,12 +1,5 @@
 <?php
-/**
- * AuthHelper
- *
- * @author Florian Krämer
- * @copyright 2013 - 2015 Florian Krämer
- * @license MIT
- */
-namespace Burzum\UserTools\View\Helper;
+namespace Users\View\Helper;
 
 use Cake\Utility\Hash;
 use Cake\View\Helper;

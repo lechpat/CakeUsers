@@ -1,13 +1,5 @@
 <?php
-/**
- * UserBehavior
- *
- * @author Florian Krämer
- * @copyright 2013 - 2015 Florian Krämer
- * @copyright 2012 Cake Development Corporation
- * @license MIT
- */
-namespace Burzum\UserTools\Model\Behavior;
+namespace Users\Model\Behavior;
 
 use Cake\Auth\PasswordHasherFactory;
 use Cake\Core\Configure;
@@ -35,7 +27,7 @@ class UserBehavior extends Behavior {
 	protected $_defaultConfig = [
 		'emailConfig' => 'default',
 		'defaultValidation' => true,
-		'validatorClass' => '\Burzum\UserTools\Validation\UsersValidator',
+		'validatorClass' => '\Users\Validation\UsersValidator',
 		'useUuid' => true,
 		'passwordHasher' => 'Default',
 		'register' => [
@@ -44,6 +36,7 @@ class UserBehavior extends Behavior {
 			'userActive' => true,
 			'generatePassword' => false,
 			'emailVerification' => true,
+            'mobileVerification' => true,
 			'verificationExpirationTime' => '+1 day',
 			'beforeRegister' => true,
 			'afterRegister' => true,
@@ -54,9 +47,10 @@ class UserBehavior extends Behavior {
 			'password' => 'password'
 		],
 		'fieldMap' => [
-			'username' => 'username',
+			'username' => 'first_name',
 			'password' => 'password',
 			'email' => 'email',
+            'mobile' => 'mobile_phone',
 			'passwordCheck' => 'confirm_password',
 			'lastAction' => 'last_action',
 			'lastLogin' => 'last_login',
@@ -64,9 +58,12 @@ class UserBehavior extends Behavior {
 			'emailToken' => 'email_token',
 			'emailVerified' => 'email_verified',
 			'emailTokenExpires' => 'email_token_expires',
+            'mobileToken' => 'mobile_token',
+            'mobileVerified' => 'mobile_verified',
+            'mobileTokenExpires' => 'mobile_token_expires',
 			'passwordToken' => 'password_token',
 			'passwordTokenExpires' => 'password_token_expires',
-			'active' => 'active',
+			'active' => 'web_enabled',
 			'slug' => 'slug',
 		],
 		'updateLastActivity' => [
@@ -76,14 +73,30 @@ class UserBehavior extends Behavior {
 			'tokenLength' => 32,
 			'expires' => '+1 day'
 		],
+        'initAccountActivation' => [
+            'tokenLength' => 32,
+            'expires' => '+5 day'
+        ],
+        'initEmailVerification' => [
+            'generatePassword' => true,
+            'tokenLength' => 32,
+            'expires' => '+1 day'
+        ],
+        'initMobileVerification' => [
+            'tokenLength' => 6,
+            'expires' => '+1 day'
+        ],
 		'sendVerificationEmail' => [
-			'template' => 'Burzum/UserTools.Users/verification_email',
+			'template' => 'Users.Users/verification_email',
+            'emailFormat' => 'html'
 		],
 		'sendNewPasswordEmail' => [
-			'template' => 'Burzum/UserTools.Users/new_password',
+			'template' => 'Users.Users/new_password',
+            'emailFormat' => 'html'
 		],
 		'sendPasswordResetToken' => [
-			'template' => 'Burzum/UserTools.Users/password_reset',
+			'template' => 'Users.Users/password_reset',
+            'emailFormat' => 'html'
 		],
 		'implementedFinders' => [
 			'active' => 'findActive',
@@ -113,7 +126,7 @@ class UserBehavior extends Behavior {
  * @param array $config The settings for this behavior.
  */
 	public function __construct(Table $table, array $config = []) {
-		$this->_defaultConfig = Hash::merge($this->_defaultConfig, (array) Configure::read('UserTools.Behavior'));
+		$this->_defaultConfig = Hash::merge($this->_defaultConfig, (array) Configure::read('Users.Behavior'));
 		parent::__construct($table, $config);
 		$this->_table = $table;
 
@@ -133,7 +146,7 @@ class UserBehavior extends Behavior {
  */
 	protected function _field($field) {
 		if (!isset($this->_config['fieldMap'][$field])) {
-			throw new \RuntimeException(__d('user_tools', 'Invalid field "%s"!', $field));
+			throw new \RuntimeException(__d('users', 'Invalid field "%s"!', $field));
 		}
 		return $this->_config['fieldMap'][$field];
 	}
@@ -355,7 +368,7 @@ class UserBehavior extends Behavior {
 
 		$result = $this->_getUser($token, [
 			'field' => $options['tokenField'],
-			'notFoundErrorMessage' => __d('user_tools', 'Invalid token.')
+			'notFoundErrorMessage' => __d('user', 'Invalid token.')
 		]);
 
 		$time = new Time();
@@ -394,6 +407,11 @@ class UserBehavior extends Behavior {
 			$user->{$this->_field('emailToken')} = null;
 			$user->{$this->_field('emailTokenExpires')} = null;
 		}
+        if ($options['tokenField'] === $this->_field('mobileToken')) {
+            $user->{$this->_field('mobileVerified')} = 1;
+            $user->{$this->_field('mobileToken')} = null;
+            $user->{$this->_field('mobileTokenExpires')} = null;
+        }
 		return $this->_table->save($user, ['validate' => false]);
 	}
 
@@ -412,6 +430,14 @@ class UserBehavior extends Behavior {
 		];
 		return $this->verifyToken($token, Hash::merge($defaults, $options));
 	}
+
+    public function verifyMobileToken($token, $options = []) {
+        $defaults = [
+            'tokenField' => $this->_field('mobileToken'),
+            'expirationField' => $this->_field('mobileTokenExpires')
+        ];
+        return $this->verifyToken($token, Hash::merge($defaults, $options));
+    }
 
 /**
  * Verify the password reset token
@@ -441,6 +467,8 @@ class UserBehavior extends Behavior {
 			$user->{$this->_field('password')} = $this->hashPassword($user->{$this->_field('password')});
 			$user->{$this->_field('passwordToken')} = null;
 			$user->{$this->_field('passwordTokenExpires')} = null;
+            $user->{$this->_field('emailVerified')} = true;
+            $user->{$this->_field('active')} = true;
 			return $this->_table->save($user, ['checkRules' => false]);
 		}
 		return false;
@@ -538,19 +566,20 @@ class UserBehavior extends Behavior {
  * @return boolean
  */
 	public function changePassword(Entity $entity) {
-		$validator = $this->_table->validator('default');
+/*		$validator = $this->_table->validator('default');
 		$validator->provider('userTable', $this->_table);
 		$validator->add('old_password', 'notBlank', [
 			'rule' => 'notBlank',
-			'message' => __d('userTools', 'Enter your old password.')
+			'message' => __d('user', 'Enter your old password.')
 		]);
 		$validator->add('old_password', 'oldPassword', [
 			'rule' => ['validateOldPassword', 'password'],
 			'provider' => 'userTable',
-			'message' => __d('user_tools', 'Wrong password, please try again.')
+			'message' => __d('user', 'Wrong password, please try again.')
 		]);
 		$this->_table->validator('default', $validator);
-		if ($entity->errors()) {
+        if($validator->errors($entity->toArray())) {
+*/		if ($entity->errors()) {
 			return false;
 		}
 		$entity->password = $this->hashPassword($entity->password);
@@ -583,7 +612,7 @@ class UserBehavior extends Behavior {
  *
  * @param \Cake\Validation\Validator $validator
  * @return \Cake\Validation\Validator
- * @see Burzum\UserTools\Controller\Component\UserToolComponent::requestPassword()
+ * @see Users\Controller\Component\UserComponent::requestPassword()
  */
 	public function validationRequestPassword(Validator $validator) {
 		$validator = $this->_table->validationDefault($validator);
@@ -608,15 +637,78 @@ class UserBehavior extends Behavior {
 		$options = Hash::merge($defaults, $this->_config['initPasswordReset'], $options);
 		$result = $this->_getUser($value, $options);
 		if (empty($result)) {
-			throw new RecordNotFoundException(__d('user_tools', 'User not found.'));
+			throw new RecordNotFoundException(__d('users', 'User not found.'));
 		}
 		$result->{$this->_field('passwordToken')} = $this->generateToken($options['tokenLength']);
 		$result->{$this->_field('passwordTokenExpires')} = $this->expirationTime($options['expires']);
 		$this->_table->save($result, ['checkRules' => false]);
-		return $this->sendPasswordResetToken($result, [
-			'to' => $result->{$this->_field('email')}
-		]);
+		return $this->sendPasswordResetToken($result, ['to' => $result->{$this->_field('email')}]);
 	}
+
+    public function initAccountActivation($value, $options = []) {
+        $defaults = [
+            'field' => [
+                $this->_table->alias() . '.' . $this->_field('email'),
+                $this->_table->alias() . '.' . $this->_field('username')
+            ]
+        ];
+        $options = Hash::merge($defaults, $this->_config['initAccountActivation'], $options);
+        $result = $this->_getUser($value, $options);
+        if (empty($result)) {
+            throw new RecordNotFoundException(__d('users', 'User not found.'));
+        }
+        $result->{$this->_field('passwordToken')} = $this->generateToken($options['tokenLength']);
+        $result->{$this->_field('passwordTokenExpires')} = $this->expirationTime($options['expires']);
+        return $this->_table->save($result, ['checkRules' => false]);
+    }
+
+    public function initEmailVerification($value, $options = []) {
+        $defaults = [
+            'field' => [
+                $this->_table->alias() . '.' . $this->_field('email'),
+                $this->_table->alias() . '.' . $this->_field('username')
+            ]
+        ];
+        $options = Hash::merge($defaults, $this->_config['initEmailVerification'], $options);
+        $result = $this->_getUser($value, $options);
+        if (empty($result)) {
+            throw new RecordNotFoundException(__d('users', 'User not found.'));
+        }
+        $result->{$this->_field('emailToken')} = $this->generateToken($options['tokenLength']);
+        $result->{$this->_field('emailTokenExpires')} = $this->expirationTime($options['expires']);
+
+        
+        //if ($generatePassword === true) {
+            $password = $this->generatePassword();
+            $result->{$this->_field('password')} = $password;
+            $result->clear_password = $password;
+        //}
+
+        //if ($hashPassword === true) {
+            $result->{$this->_field('password')} = $this->hashPassword($result->{$this->_field('password')});
+        //}
+        $this->_table->save($result, ['checkRules' => false]);
+        return $this->sendVerificationEmail($result, [
+            'to' => $result->{$this->_field('email')}
+        ]);
+    }
+
+    public function initMobileVerification(Entity $entity,$options = []) {
+        $defaults = [
+            'field' => [
+                $this->_table->alias() . '.' . $this->_field('email'),
+                $this->_table->alias() . '.' . $this->_field('username')
+            ]
+        ];
+        $options = Hash::merge($defaults, $this->_config['initMobileVerification'], $options);
+        $entity->{$this->_field('mobileToken')} = $this->generateToken($options['tokenLength'],'0123456789');
+        $entity->{$this->_field('mobileTokenExpires')} = $this->expirationTime($options['expires']);
+        $this->_table->save($entity, ['checkRules' => false]);
+        return $this->sendMobileVerification([
+            'phone' => $entity->{$this->_field('mobile')},
+            'message' => $entity->{$this->_field('mobileToken')} . ' es tu codigo de validacion de Fonde.'
+        ]);
+    }
 
 /**
  * Finds a single user, convenience method
@@ -643,7 +735,7 @@ class UserBehavior extends Behavior {
  */
 	protected function _getUser($value, $options = []) {
 		$defaults = [
-			'notFoundErrorMessage' => __d('user_tools', 'User not found'),
+			'notFoundErrorMessage' => __d('user', 'User not found'),
 			'field' => $this->_table->alias() . '.' . $this->_table->primaryKey()
 		];
 		$options = Hash::merge($defaults, $options);
@@ -651,13 +743,12 @@ class UserBehavior extends Behavior {
 		$query = $this->_table->find();
 
 		if (is_array($options['field'])) {
-			foreach ($options['field'] as $field) {
-				$query->orWhere([$field => $value]);
-			}
+	        foreach ($options['field'] as $field) {
+	            $query->orWhere([$field => $value]);
+	        }
 		} else {
 			$query->where([$options['field'] => $value]);
 		}
-
 		$result = $query->first();
 
 		if (empty($result)) {
@@ -685,7 +776,7 @@ class UserBehavior extends Behavior {
 			])
 			->first();
 		if (empty($result)) {
-			throw new RecordNotFoundException(__d('user_tools', 'Invalid user'));
+			throw new RecordNotFoundException(__d('users', 'Invalid user'));
 		}
 		$result->password = $result->clear_password = $this->generatePassword();
 		$result->password = $this->hashPassword($result->password);
@@ -743,8 +834,9 @@ class UserBehavior extends Behavior {
  */
 	public function sendPasswordResetToken(Entity $user, $options = []) {
 		$defaults = [
-			'subject' => __d('user_tools', 'Your password reset'),
+			'subject' => __d('user', 'Your password reset'),
 			'viewVars' => [
+                'title' => __d('user', 'Your password reset'),
 				'user' => $user
 			]
 		];
@@ -760,8 +852,9 @@ class UserBehavior extends Behavior {
  */
 	public function sendNewPasswordEmail(Entity $user, $options = []) {
 		$defaults = [
-			'subject' => __d('user_tools', 'Your new password'),
+			'subject' => __d('user', 'Your new password'),
 			'viewVars' => [
+                'title' => __d('user', 'Your new password'),
 				'user' => $user
 			]
 		];
@@ -777,11 +870,23 @@ class UserBehavior extends Behavior {
  */
 	public function sendVerificationEmail(Entity $data, $options = []) {
 		$defaults = [
-			'subject' => __d('user_tools', 'Please verify your Email'),
+			'subject' => __d('user', 'Please verify your Email'),
 			'viewVars' => [
+                'title' => __d('user', 'Please verify your Email'),
 				'user' => $data
 			]
 		];
 		return $this->sendEmail(Hash::merge($defaults, $this->_config['sendVerificationEmail'], $options));
 	}
+
+
+    public function sendMobileVerification($sms, $options = []) {
+        $data = [
+            'phone' => $sms['phone'],
+            'body' => $sms['message']
+        ]; 
+        $event = new \Cake\Event\Event('Notifications.sms.notify', $this, $data);
+        \Cake\Event\EventManager::instance()->dispatch($event);
+        return $event->result;
+    }   
 }

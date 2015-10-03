@@ -1,9 +1,9 @@
 <table>
 	<tr>
-		<th><?= $this->Paginator->sort('username', __d('user_tools', 'Username')) ?></th>
-		<th><?= $this->Paginator->sort('email', __d('user_tools', 'Email')) ?></th>
-		<th><?= $this->Paginator->sort('email_verified', __d('user_tools', 'Email Verified')) ?></th>
-		<th><?= $this->Paginator->sort('created', __d('user_tools', 'Created')) ?></th>
+		<th><?= $this->Paginator->sort('username', __d('users', 'Username')) ?></th>
+		<th><?= $this->Paginator->sort('email', __d('users', 'Email')) ?></th>
+		<th><?= $this->Paginator->sort('email_verified', __d('users', 'Email Verified')) ?></th>
+		<th><?= $this->Paginator->sort('created', __d('users', 'Created')) ?></th>
 	</tr>
 	<?php foreach ($users as $user) : ?>
 		<tr>
@@ -14,12 +14,12 @@
 				<?= h($user->email) ?>
 			</td>
 			<td>
-				<?= $user->email_verified == 1 ? __d('user_tools', 'Yes') : __d('user_tools', 'No') ?>
+				<?= $user->email_verified == 1 ? __d('users', 'Yes') : __d('users', 'No') ?>
 			</td>
 			<td>
 				<?php
 					if (empty($user->created)) {
-						echo __d('user_tools', 'N/A');
+						echo __d('users', 'N/A');
 					} else {
 						echo h($this->Time->format($user->created, '%c'));
 					}

@@ -1,5 +1,5 @@
-<?= __d('user_tools', 'Hello {0}!', h($user->username)) ?>
+<?= __d('users', 'Hello {0}!', h($user->username)) ?>
 
-<?= __d('user_tools', 'Please click this link to activate your account.') ?>
+<?= __d('users', 'Please click this link to activate your account.') ?>
 
 <?= \Cake\Routing\Router::url(['controller' => 'users', 'action' => 'verify_email', '?' => ['token' => $user->email_token]], true) ?>

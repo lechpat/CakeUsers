@@ -1,12 +1,5 @@
 <?php
-/**
- * UserToolComponent
- *
- * @author Florian Krämer
- * @copyright 2013 - 2015 Florian Krämer
- * @license MIT
- */
-namespace Burzum\UserTools\Controller\Component;
+namespace Users\Controller\Component;
 
 use Cake\Controller\Component;
 use Cake\Event\EventManagerTrait;
@@ -19,7 +12,7 @@ use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\Core\Configure;
 use Cake\Network\Response;
 
-class UserToolComponent extends Component {
+class UserComponent extends Component {
 
 	use EventManagerTrait;
 
@@ -55,8 +48,9 @@ class UserToolComponent extends Component {
 						'password' => 'password'
 					],
 					'scope' => [
-						'Users.email_verified' => 1
-					]
+                        'Users.active' => 1,
+					    'Users.email_verified' => 1
+			        ]
 				]
 			]
 		],
@@ -71,38 +65,78 @@ class UserToolComponent extends Component {
 		'login' => [
 			'successFlashOptions' => [],
 			'successRedirectUrl' => null,
-			'errorFlashOptions' => [],
+			'errorFlashOptions' => ['key' => 'auth'],
 			'errorRedirectUrl' => false,
 			'setEntity' => true,
 		],
 		'logout' => [
 			'successFlashOptions' => [],
 			'successRedirectUrl' => '/',
+            'successMessage' => false,
 		],
+        'activateAccount' => [
+            'successFlashOptions' => [],
+            'successRedirectUrl' => ['action' => 'login'],
+            'errorFlashOptions' => [],
+            'errorRedirectUrl' => false,
+            'invalidErrorFlashOptions' => [],
+            'invalidErrorRedirectUrl' => ['action' => 'forgot'],
+            'expiredErrorFlashOptions' => [],
+            'expiredErrorRedirectUrl' => ['action' => 'forgot'],
+            'queryParam' => 'token',
+            'tokenOptions' => [],
+        ],
 		'verifyEmailToken' => [
 			'queryParam' => 'token',
+            'returnData' => true,
 			'successRedirectUrl' => [
 				'action' => 'login'
 			],
-			'errorRedirectUrl' => '/'
+			'errorRedirectUrl' => ['action' => 'activation']
 		],
+        'verifyMobileToken' => [
+            'queryParam' => 'token',
+            'returnData' => true,
+            'successRedirectUrl' => [
+                'plugin' => false,
+                'controller' => 'Portal',
+                'action' => 'index'
+            ],
+            'errorRedirectUrl' => ['action' => 'validate_mobile']
+        ],
+        'requestEmailValidation' => [
+            'successFlashOptions' => [],
+            'successRedirectUrl' => ['action' => 'login'],
+            'errorFlashOptions' => [],
+            'errorRedirectUrl' => ['action' => 'activation'],
+            'field' => 'email',
+            'setEntity' => true,
+        ],
+        'requestMobileValidation' => [
+            'successFlashOptions' => [],
+            'successRedirectUrl' => ['action' => 'validate_mobile'],
+            'errorFlashOptions' => [],
+            'errorRedirectUrl' => ['action' => 'validate_mobile'],
+            'field' => 'email',
+            'setEntity' => true,
+        ],
 		'requestPassword' => [
 			'successFlashOptions' => [],
-			'successRedirectUrl' => '/',
+			'successRedirectUrl' => ['action' => 'login'],
 			'errorFlashOptions' => [],
-			'errorRedirectUrl' => '/',
+			'errorRedirectUrl' => ['action' => 'forgot'],
 			'field' => 'email',
 			'setEntity' => true,
 		],
 		'resetPassword' => [
 			'successFlashOptions' => [],
-			'successRedirectUrl' => '/',
+			'successRedirectUrl' => ['action' => 'login'],
 			'errorFlashOptions' => [],
 			'errorRedirectUrl' => false,
 			'invalidErrorFlashOptions' => [],
-			'invalidErrorRedirectUrl' => '/',
+			'invalidErrorRedirectUrl' => ['action' => 'forgot'],
 			'expiredErrorFlashOptions' => [],
-			'expiredErrorRedirectUrl' => '/',
+			'expiredErrorRedirectUrl' => ['action' => 'forgot'],
 			'queryParam' => 'token',
 			'tokenOptions' => [],
 		],
@@ -120,17 +154,30 @@ class UserToolComponent extends Component {
 			'viewVar' => 'user'
 		],
 		'actionMap' => [
-			'index' => [
-				'method' => 'listing',
-				'view' => 'Burzum/UserTools.UserTools/index',
-			],
+//			'index' => [
+//				'method' => 'listing',
+//				'view' => 'Users.Users/index',
+//			],
+            'activation' => [
+                'method' => 'activateAccount',
+                'view' => 'Users.Gateway/activate_account'
+            ],
+            'validate_email' => [
+                'method' => 'requestEmailVerification',
+                'view' => 'Users.Gateway/request_email_validation'
+            ],
+            'validate_mobile' => [
+                'method' => 'requestMobileVerification',
+                'view' => 'Users.Gateway/request_mobile_validation'
+            ],
 			'register' => [
 				'method' => 'register',
-				'view' => 'Burzum/UserTools.UserTools/register'
+				'view' => 'Users.Gateway/register'
 			],
 			'login' => [
 				'method' => 'login',
-				'view' => 'Burzum/UserTools.UserTools/login',
+				'view' => 'Users.Gateway/login',
+                'layout' => 'login'
 			],
 			'logout' => [
 				'method' => 'logout',
@@ -138,23 +185,27 @@ class UserToolComponent extends Component {
 			],
 			'reset_password' => [
 				'method' => 'resetPassword',
-				'view' => 'Burzum/UserTools.UserTools/reset_password',
+				'view' => 'Users.Gateway/reset_password',
 			],
-			'request_password' => [
+			'forgot' => [
 				'method' => 'requestPassword',
-				'view' => 'Burzum/UserTools.UserTools/request_password',
+				'view' => 'Users.Gateway/forgot',
 			],
 			'change_password' => [
 				'method' => 'changePassword',
-				'view' => 'Burzum/UserTools.UserTools/change_password',
+				'view' => 'Users.Gateway/change_password',
 			],
 			'verify_email' => [
 				'method' => 'verifyEmailToken',
-				'view' => 'Burzum/UserTools.UserTools/verify_email',
+				'view' => 'Users.Gateway/verify_email',
 			],
-			'view' => [
+            'verify_mobile' => [
+                'method' => 'verifyMobileToken',
+                'view' => 'Users.Gateway/verify_mobile',
+            ],
+			'me' => [
 				'method' => 'getUser',
-				'view' => 'Burzum/UserTools.UserTools/view',
+				'view' => 'Users.Gateway/me',
 			]
 		]
 	];
@@ -176,7 +227,7 @@ class UserToolComponent extends Component {
 /**
  * Helper property to detect a redirect
  *
- * @see UserToolComponent::handleFlashAndRedirect();
+ * @see UserComponent::handleFlashAndRedirect();
  * @var \Cake\Network\Response
  */
 	protected $_redirectResponse = null;
@@ -194,16 +245,16 @@ class UserToolComponent extends Component {
  * @param ComponentRegistry $registry ComponentRegistry object.
  * @param array $config Config options array
  */
-	public function __construct(ComponentRegistry $registry, $config = []) {
-		$this->_defaultConfig = Hash::merge(
-			$this->_defaultConfig,
-			$this->_translateConfigMessages(),
-			(array) Configure::read('UserTools.Component')
-		);
-		$this->_controller = $registry->getController();
-		$this->response = $this->_controller->response;
-		parent::__construct($registry, $config);
-	}
+//	public function __construct(ComponentRegistry $registry, $config = []) {
+//		$this->_defaultConfig = Hash::merge(
+//			$this->_defaultConfig,
+//			$this->_translateConfigMessages(),
+//			(array) Configure::read('Users.Component')
+//		);
+//		$this->_controller = $registry->getController();
+//		$this->response = $this->_controller->response;
+//		parent::__construct($registry, $config);
+//	}
 
 /**
  * Translates the messages in the configuration array
@@ -213,36 +264,54 @@ class UserToolComponent extends Component {
 	protected function _translateConfigMessages() {
 		return [
 			'requestPassword' => [
-				'successMessage' => __d('user_tools', 'An email was send to your address, please check your inbox.'),
-				'errorMessage' => __d('user_tools', 'Invalid user.'),
+				'successMessage' => __d('user', 'An email was send to your address, please check your inbox.'),
+				'errorMessage' => __d('user', 'Invalid user.'),
 			],
+            'requestEmailValidation' => [
+                'successMessage' => __d('user', 'An email was send to your address, please check your inbox.'),
+                'errorMessage' => __d('user', 'Invalid user.') .' o tu cuenta ya ha sido activada',
+            ],
+            'requestMobileValidation' => [
+                'successMessage' => __d('user', 'A code was send to your mobile, please check your mobile.'),
+                'errorMessage' => __d('user', 'Invalid number.'),
+            ],
+            'activateAccount' => [
+                'successMessage' => __d('user', 'Your password has been reset, you can now login.'),
+                'errorMessage' => __d('user', 'Please check your inputs.'),
+                'invalidErrorMessage' => __d('user', 'Invalid token!'),
+                'expiredErrorMessage' => __d('user', 'The token has expired!')
+            ],
 			'resetPassword' => [
-				'successMessage' => __d('user_tools', 'Your password has been reset, you can now login.'),
-				'errorMessage' => __d('user_tools', 'Please check your inputs.'),
-				'invalidErrorMessage' => __d('user_tools', 'Invalid token!'),
-				'expiredErrorMessage' => __d('user_tools', 'The token has expired!')
+				'successMessage' => __d('user', 'Your password has been reset, you can now login.'),
+				'errorMessage' => __d('user', 'Please check your inputs.'),
+				'invalidErrorMessage' => __d('user', 'Invalid token!'),
+				'expiredErrorMessage' => __d('user', 'The token has expired!')
 			],
 			'changePassword' => [
-				'successMessage' => __d('user_tools', 'Your password has been updated.'),
-				'errorMessage' => __d('user_tools', 'Could not update your password, please check for errors and try again.'),
+				'successMessage' => __d('user', 'Your password has been updated.'),
+				'errorMessage' => __d('user', 'Could not update your password, please check for errors and try again.'),
 			],
 			'registration' => [
-				'successMessage' => __d('user_tools', 'Thank you for signing up!'),
-				'errorMessage' => __d('user_tools', 'Please check your inputs'),
+				'successMessage' => __d('user', 'Thank you for signing up!'),
+				'errorMessage' => __d('user', 'Please check your inputs'),
 			],
 			'login' => [
-				'successMessage' => __d('user_tools', 'You are logged in!'),
-				'errorMessage' => __d('user_tools', 'Invalid login credentials.'),
+				'successMessage' => __d('user', 'You are logged in!'),
+				'errorMessage' => __d('user', 'Invalid login credentials.'),
 			],
 			'logout' => [
-				'successMessage' => __d('user_tools', 'You are logged out!'),
+				'successMessage' => __d('user', 'You are logged out!'),
 			],
 			'verifyEmailToken' => [
-				'successMessage' => __d('user_tools', 'Email verified, you can now login!'),
-				'errorMessage' => __d('user_tools', 'Invalid email token!'),
+				'successMessage' => __d('user', 'Email verified, you can now login!'),
+				'errorMessage' => __d('user', 'Invalid email token!'),
 			],
+            'verifyMobileToken' => [
+                'successMessage' => __d('user', 'Mobile verified.'),
+                'errorMessage' => __d('user', 'Invalid mobile token!'),
+            ],
 			'verifyToken' => [
-				'successMessage' => __d('user_tools', 'Token verified!'),
+				'successMessage' => __d('user', 'Token verified!'),
 			]
 		];
 	}
@@ -253,6 +322,16 @@ class UserToolComponent extends Component {
  * @return void
  */
 	public function initialize(array $config) {
+        $this->_controller = $this->_registry->getController();
+        $this->response =& $this->_controller->response;
+
+        $defaults = Hash::merge(
+            $this->_defaultConfig,
+            $this->_translateConfigMessages(),
+            (array) Configure::read('Users.Component'),
+            $config
+        );
+        $this->config($defaults);
 		$this->setUserTable($this->_config['userModel']);
 		$this->loadUserBehaviour();
 	}
@@ -275,11 +354,11 @@ class UserToolComponent extends Component {
  * @return void
  */
 	public function loadUserBehaviour() {
-		if ($this->_config['autoloadBehavior'] && !$this->UserTable->hasBehavior('UserTools.User')) {
+		if ($this->_config['autoloadBehavior'] && !$this->UserTable->hasBehavior('Users.User')) {
 			if (is_array($this->_config['autoloadBehavior'])) {
-				$this->UserTable->addBehavior('Burzum/UserTools.User', $this->_config['autoloadBehavior']);
+				$this->UserTable->addBehavior('Users.User', $this->_config['autoloadBehavior']);
 			} else {
-				$this->UserTable->addBehavior('Burzum/UserTools.User');
+				$this->UserTable->addBehavior('Users.User');
 			}
 		}
 	}
@@ -331,7 +410,7 @@ class UserToolComponent extends Component {
  */
 	public function mapAction() {
 		$action = $this->request->params['action'];
-
+        $layout = 'default';
 		if ($this->_config['directMapping'] === true) {
 			if (!method_exists($this, $action)) {
 				return false;
@@ -340,7 +419,7 @@ class UserToolComponent extends Component {
 			if ($result instanceof Response) {
 				return $result;
 			}
-			return $this->_controller->render($action);
+			return $this->_controller->render($action,$layout);
 		}
 
 		if (isset($this->_config['actionMap'][$action]) && method_exists($this, $this->_config['actionMap'][$action]['method'])) {
@@ -348,8 +427,11 @@ class UserToolComponent extends Component {
 			if ($this->_redirectResponse instanceof Response) {
 				return $this->_redirectResponse;
 			}
+            if (isset($this->_config['actionMap'][$action]['layout']) && is_string($this->_config['actionMap'][$action]['layout'])) {
+                $layout = $this->_config['actionMap'][$action]['layout'];
+            }
 			if (is_string($this->_config['actionMap'][$action]['view'])) {
-				return $this->_controller->render($this->_config['actionMap'][$action]['view']);
+				return $this->_controller->render($this->_config['actionMap'][$action]['view'],$layout);
 			} else {
 				return $this->response;
 			}
@@ -383,7 +465,6 @@ class UserToolComponent extends Component {
 
 			$Auth = $this->_getAuthObject();
 			$user = $Auth->identify();
-
 			if ($user) {
 				$event = new Event('User.afterLogin', $this, ['options' => $options]);
 				$this->eventManager()->dispatch($event);
@@ -403,6 +484,7 @@ class UserToolComponent extends Component {
 		if ($options['setEntity']) {
 			$this->_controller->set('userEntity', $entity);
 		}
+        $this->_controller->set('title', __d('users', 'Login'));
 		return false;
 	}
 
@@ -417,11 +499,14 @@ class UserToolComponent extends Component {
  * @return mixed
  */
 	public function getUser($userId = null, $options = []) {
+        $Auth = $this->_getAuthObject();
+        if(!$Auth->user('id')) {
+            $result = $this->_controller->redirect($Auth->config('loginAction'));
+            return $this->_redirectResponse = $result;
+        }
 		$options = Hash::merge($this->_config['getUser'], $options);
 		if (is_null($userId)) {
-			if (isset($this->request->params['pass'][0])) {
-				$userId = $this->request->params['pass'][0];
-			}
+            $userId = $Auth->user('id');
 		}
 		$entity = $this->UserTable->getUser($userId);
 		if ($options['viewVar'] !== false) {
@@ -529,9 +614,92 @@ class UserToolComponent extends Component {
  * @return mixed
  */
 	public function verifyEmailToken($options = []) {
-		return $this->verifyToken(Hash::merge($this->_defaultConfig['verifyEmailToken'], $options, ['type' => 'Email']));
+		return $this->verifyToken(Hash::merge($this->_config['verifyEmailToken'], $options, ['type' => 'Email']));
 	}
 
+    public function requestEmailVerification($options = []) {
+        $options = Hash::merge($this->_config['requestEmailValidation'], $options);
+        $entity = $this->UserTable->newEntity(['validate' => 'requestPassword']);
+        if ($this->request->is('post')) {
+            $entity = $this->UserTable->patchEntity($entity, $this->request->data, ['validate' => 'requestPassword']);
+
+            if (!$entity->errors($options['field']) && $this->_initEmailVerification($entity, $options)) {
+                return true;
+            }
+
+            if ($options['setEntity']) {
+                if ($entity->dirty('email') && !$entity->errors('email')) {
+                    $entity->email = '';
+                }
+                $this->_controller->set('userEntity', $entity);
+            }
+            unset($this->request->data[$options['field']]);
+            return false;
+        }
+        if ($options['setEntity']) {
+            $this->_controller->set('userEntity', $entity);
+        }
+    }
+
+    protected function _initEmailVerification($entity, $options) {
+        try {
+            $this->UserTable->initEmailVerification($this->request->data[$options['field']]);
+            $this->handleFlashAndRedirect('success', $options);
+            if ($options['setEntity']) {
+                $this->_controller->set('userEntity', $entity);
+            }
+            return true;
+        } catch (RecordNotFoundException $e) {
+            $this->handleFlashAndRedirect('error', $options);
+        }
+        return false;
+    }
+
+    public function requestMobileVerification($options = []) {
+        $Auth = $this->_getAuthObject();
+        if(!$Auth->user('id')) {
+            $result = $this->_controller->redirect($Auth->config('loginAction'));
+            return $this->_redirectResponse = $result;
+        }
+        $options = (Hash::merge($this->_config['requestMobileValidation'], $options));
+        $entity = $this->UserTable->get($this->_controller->Auth->user('id'));
+        if ($this->request->is(['post', 'put'])) {
+            $entity = $this->UserTable->patchEntity($entity, $this->request->data);
+            if(!isset($this->request->data['code'])) {
+                if ($this->UserTable->initMobileVerification($entity)) {
+                    $this->request->data = [];
+                    $entity = $this->UserTable->newEntity();
+                    $entity->id = $this->_controller->Auth->user('id');
+                    $entity->isNew(false);
+                    $this->handleFlashAndRedirect('success', $options);
+                } else {
+                    $this->handleFlashAndRedirect('error', $options);
+                }
+            } else {
+                $this->request->query[$this->_config['verifyMobileToken']['queryParam']] = $this->request->data['code'];
+                return $this->verifyMobileToken($this->request->data['code'],$options);
+            }
+        }
+        $this->_controller->set('entity', $entity);
+    }
+
+    protected function _initMobileVerification($entity, $options) {
+        try {
+            $this->UserTable->initMobileVerification($this->request->data[$options['field']]);
+            $this->handleFlashAndRedirect('success', $options);
+            if ($options['setEntity']) {
+                $this->_controller->set('entity', $entity);
+            }
+            return true;
+        } catch (RecordNotFoundException $e) {
+            $this->handleFlashAndRedirect('error', $options);
+        }
+        return false;
+    }
+
+    public function verifyMobileToken($options = []) {
+        return $this->verifyToken(Hash::merge($this->_config['verifyMobileToken'], $options, ['type' => 'Mobile']));
+    } 
 /**
  * The user can request a new password reset token, an email is send to him.
  *
@@ -585,7 +753,7 @@ class UserToolComponent extends Component {
  * @return void
  */
 	public function resetPassword($token = null, $options = []) {
-		$options = (Hash::merge($this->_defaultConfig['resetPassword'], $options));
+		$options = (Hash::merge($this->_config['resetPassword'], $options));
 		if (!empty($this->request->query[$options['queryParam']])) {
 			$token = $this->request->query[$options['queryParam']];
 		}
@@ -606,8 +774,9 @@ class UserToolComponent extends Component {
 			$this->handleFlashAndRedirect('expiredError', $options);
 		}
 
-		if ($this->request->is('post')) {
-			$entity = $this->UserTable->patchEntity($entity, $this->request->data);
+		if ($this->request->is('post') || $this->request->is('put')) {
+            $entity->accessible('password', true);
+			$entity = $this->UserTable->patchEntity($entity, $this->request->data,[]);
 			if ($this->UserTable->resetPassword($entity)) {
 				$this->handleFlashAndRedirect('success', $options);
 			} else {
@@ -620,18 +789,71 @@ class UserToolComponent extends Component {
 	}
 
 /**
+ * Allows the user to enter a new password.
+ *
+ * @param string $token
+ * @param array $options
+ * @return void
+ */
+    public function activateAccount($token = null, $options = []) {
+        $options = (Hash::merge($this->_config['activateAccount'], $options));
+        if (!empty($this->request->query[$options['queryParam']])) {
+            $token = $this->request->query[$options['queryParam']];
+        }
+        try {
+            $entity = $this->UserTable->verifyPasswordResetToken($token, $options['tokenOptions']);
+        } catch (RecordNotFoundException $e) {
+            if (empty($this->_config['activateAccount']['invalidErrorMessage'])) {
+                $this->_config['activateAccount']['invalidErrorMessage'] = $e->getMessage();
+            }
+            $this->handleFlashAndRedirect('invalidError', $options);
+            $entity = $this->UserTable->newEntity();
+        }
+
+        if (isset($entity->token_is_expired) && $entity->token_is_expired === true) {
+            if (empty($this->_config['activateAccount']['invalidErrorMessage'])) {
+                $this->_config['activateAccount']['invalidErrorMessage'] = $e->getMessage();
+            }
+            $this->handleFlashAndRedirect('expiredError', $options);
+        }
+
+        if ($this->request->is('post') || $this->request->is('put')) {
+            $entity->accessible('password', true);
+            $entity = $this->UserTable->patchEntity($entity, $this->request->data,[]);
+            if ($this->UserTable->resetPassword($entity)) {
+                $this->handleFlashAndRedirect('success', $options);
+            } else {
+                $this->handleFlashAndRedirect('error', $options);
+            }
+        } else {
+            $entity = $this->UserTable->newEntity();
+        }
+        $this->_controller->set('entity', $entity);
+    }
+
+/**
  * Let the logged in user change his password.
  *
  * @param array $options
  * @return void
  */
 	public function changePassword($options = []) {
-		$options = (Hash::merge($this->_defaultConfig['changePassword'], $options));
+		$options = (Hash::merge($this->_config['changePassword'], $options));
 		$entity = $this->UserTable->newEntity();
-		$entity->accessible(['id', 'old_password', 'new_password', 'confirm_password'], true);
+		$entity->accessible(['id', 'old_password', 'password', 'confirm_password'], true);
 		if ($this->request->is(['post', 'put'])) {
+            $this->UserTable->validator()
+                ->add('old_password', 'notBlank', [ 
+                'rule' => 'notBlank',
+                'message' => __d('user', 'Enter your old password.')
+            ])
+                ->add('old_password', 'oldPassword', [
+                'rule' => ['validateOldPassword', 'password'], 
+                'provider' => 'table',
+                'message' => __d('user', 'Wrong password, please try again.')
+            ]);
+            $this->request->data['id'] = $this->_controller->Auth->user('id');
 			$entity = $this->UserTable->patchEntity($entity, $this->request->data);
-			$entity->id = $this->_controller->Auth->user('id');
 			$entity->isNew(false);
 			if ($this->UserTable->changePassword($entity)) {
 				$this->request->data = [];
@@ -655,14 +877,18 @@ class UserToolComponent extends Component {
  */
 	public function verifyToken($options = []) {
 		$options = Hash::merge($this->_defaultConfig['verifyToken'], $options);
-
 		if (!isset($this->request->query[$options['queryParam']])) {
-			throw new NotFoundException(__d('user_tools', 'No token present!'));
+			throw new NotFoundException(__d('users', 'No token present!'));
 		}
-
 		$methodName = 'verify' . $options['type'] . 'Token';
 		try {
-			$result = $this->UserTable->$methodName($this->request->query[$options['queryParam']]);
+            $result = $this->UserTable->$methodName($this->request->query[$options['queryParam']],$options);
+            if ($result) {
+                $user = $result->toArray();
+                unset($user['password']);
+                $Auth = $this->_getAuthObject();
+                $Auth->setUser($user);
+            }
 			$this->handleFlashAndRedirect('success', $options);
 		} catch (RecordNotFoundException $e) {
 			if (is_null($options['errorMessage'])) {
