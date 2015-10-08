@@ -22,13 +22,13 @@ Router::connect('/admin/me', [
     'prefix' => 'admin',
 ], ['routeClass' => 'Cake\Routing\Route\InflectedRoute']);
 
-Router::connect('/user/profile', [
+Router::connect('/profile', [
     'plugin' => 'Users',
     'controller' => 'Gateway',
     'action' => 'profile',
 ], ['routeClass' => 'Cake\Routing\Route\InflectedRoute']);
 
-Router::connect('/admin/user/profile', [
+Router::connect('/admin/profile', [
     'plugin' => 'Users',
     'controller' => 'Gateway',
     'action' => 'profile',
@@ -42,8 +42,8 @@ Router::connect('/login', [
 ], ['routeClass' => 'Cake\Routing\Route\InflectedRoute']);
 
 Router::connect('/admin/login', [
-    'plugin' => false,
-    'controller' => 'Users',
+    'plugin' => 'Users',
+    'controller' => 'Gateway',
     'action' => 'login',
     'prefix' => 'admin',
 ], ['routeClass' => 'Cake\Routing\Route\InflectedRoute']);

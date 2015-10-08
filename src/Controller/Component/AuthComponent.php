@@ -15,5 +15,10 @@ class AuthComponent extends CakeAuthComponent
      *
      * @var array
      */
-    protected $_defaultConfig = [];
+//    protected $_defaultConfig = [];
+
+    public function hasRole($role)
+    {
+       
+    }
 }

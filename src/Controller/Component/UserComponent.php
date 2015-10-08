@@ -22,7 +22,7 @@ class UserComponent extends Component {
  * @var array
  */
 	public $components = array(
-		'Session',
+//		'Session',
 		'Flash',
 	);
 
