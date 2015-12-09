@@ -131,4 +131,9 @@ class AuthHelper extends Helper {
 		}
 	}
 
+    public function identifyById($id)
+    {
+        if(empty($id)) { return '';}
+        return \Cake\ORM\TableRegistry::get('Users.Users')->get($id)->name;
+    }
 }
