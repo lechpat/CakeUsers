@@ -19,6 +19,6 @@ class AuthComponent extends CakeAuthComponent
 
     public function hasRole($role)
     {
-       
+        return \Cake\Utility\Hash::check($this->user('roles'),sprintf('{n}[alias=/%s/]',$role));
     }
 }
